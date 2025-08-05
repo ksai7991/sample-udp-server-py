@@ -12,7 +12,7 @@ def run_udp_server():
     print(f"✅ UDP server listening on port {UDP_PORT}...")
     while True:
         data, addr = sock.recvfrom(1024)
-        print(f"📩 Received message from {addr}: {data.decode()}")
+        print(f"📩 [UDP] Received from {addr}: {data.decode()}")
 
 # --- HTTP server with /health endpoint ---
 class HealthHandler(BaseHTTPRequestHandler):
@@ -27,8 +27,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def log_message(self, format, *args):
-        # Suppress HTTP logs completely
-        return
+        return  # Suppress logs
 
 HTTP_PORT = 8080
 
@@ -38,13 +37,35 @@ def run_http_server():
     print(f"🌐 HTTP server listening on port {HTTP_PORT}...")
     httpd.serve_forever()
 
-# --- Run both servers ---
+# --- TCP echo server setup ---
+TCP_IP = "0.0.0.0"
+TCP_PORT = 3550
+
+def run_tcp_server():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((TCP_IP, TCP_PORT))
+    sock.listen(5)
+    print(f"🔌 TCP server listening on port {TCP_PORT}...")
+
+    while True:
+        conn, addr = sock.accept()
+        print(f"📥 [TCP] Connection from {addr}")
+        data = conn.recv(1024)
+        if data:
+            print(f"📨 [TCP] Received: {data.decode()}")
+            conn.sendall(data)  # Echo back
+        conn.close()
+
+# --- Run all servers ---
 if __name__ == "__main__":
     udp_thread = threading.Thread(target=run_udp_server, daemon=True)
     http_thread = threading.Thread(target=run_http_server, daemon=True)
+    tcp_thread = threading.Thread(target=run_tcp_server, daemon=True)
 
     udp_thread.start()
     http_thread.start()
+    tcp_thread.start()
 
     udp_thread.join()
     http_thread.join()
+    tcp_thread.join()
