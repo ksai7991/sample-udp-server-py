@@ -1,6 +1,6 @@
 import socket
 import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # --- UDP server setup ---
 UDP_IP = "0.0.0.0"
@@ -14,12 +14,23 @@ def run_udp_server():
         data, addr = sock.recvfrom(1024)
         print(f"📩 Received message from {addr}: {data.decode()}")
 
-# --- HTTP server setup ---
+# --- HTTP server with /health endpoint ---
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ["/", "/health", "/sample-udp-server-py"]:
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.send_response(404)
+            self.end_headers()
+
 HTTP_PORT = 8080
 
 def run_http_server():
     server_address = ('', HTTP_PORT)
-    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    httpd = HTTPServer(server_address, HealthHandler)
     print(f"🌐 HTTP server listening on port {HTTP_PORT}...")
     httpd.serve_forever()
 
@@ -31,6 +42,5 @@ if __name__ == "__main__":
     udp_thread.start()
     http_thread.start()
 
-    # Keep the main thread alive
     udp_thread.join()
     http_thread.join()
