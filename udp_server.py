@@ -26,6 +26,10 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def log_message(self, format, *args):
+        # Suppress HTTP logs completely
+        return
+
 HTTP_PORT = 8080
 
 def run_http_server():
